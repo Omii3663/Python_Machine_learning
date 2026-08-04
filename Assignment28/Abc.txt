@@ -1,0 +1,6 @@
+hello Omkar!!
+hello world
+Good morining
+bye!!
+See you tommarow
+This the Test file  copied from abc.txt to demo
