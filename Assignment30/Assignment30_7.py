@@ -2,6 +2,7 @@ import os
 import shutil
 import time
 from datetime import datetime
+import schedule
 
 
 def perform_backup(source_file, dest_dir):
@@ -79,13 +80,15 @@ def main():
     print(f"\nBackup service initiated for: {source_file}")
     print("Press Ctrl+C to stop the program.\n")
 
+    schedule.every().hour.do(perform_backup, source_file=source_file, dest_dir=dest_dir)
+    perform_backup(source_file, dest_dir)
+
     try:
+
         # Infinite loop to perform a file backup every hour
         while True:
-            perform_backup(source_file, dest_dir)
-
-            # Wait for 1 hour (3600 seconds) before the next backup
-            time.sleep(3600)
+            schedule.run_pending()  # 
+            time.sleep(1)
             
     except KeyboardInterrupt:
         print("\nBackup scheduler stopped cleanly by user.")
