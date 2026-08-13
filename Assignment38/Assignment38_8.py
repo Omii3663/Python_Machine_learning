@@ -21,7 +21,7 @@ def StudentPerformance(DataPath):
 
     #plt.grid(True)
 
-    #plt.legend()
+    plt.legend()
     plt.show()
 
 
