@@ -1,11 +1,12 @@
 import pandas as pd
 import joblib
 
+from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score
+
 
 Boreder = '-'*40
 # step 1 : Load Data
@@ -17,13 +18,15 @@ Boreder = '-'*40
 # Author         : Omkar Ramchandra Kolte
 # Date           : 18/08/2026
 #-----------------------------------------------------
+
 def LoadData(DataPath):
 
     df = pd.read_csv(DataPath)
 
-    print("Data Set Load Succesfully...")
+    print("Data Set Load Succesfully")
 
     print(df.head())
+
     print(Boreder)
 
     return df
@@ -31,7 +34,7 @@ def LoadData(DataPath):
 # step 2 : PreProcess Data
 #----------------------------------------------------
 # Funcation Name : PreProcessData
-# Description    : Process Data Its Perform EDA
+# Description    : Process Data Its Perform EDA (Cleaing,prepare,Manipulate)
 # Input          : Data frame
 # output         : Updated Data frame
 # Author         : Omkar Ramchandra Kolte
@@ -40,22 +43,26 @@ def LoadData(DataPath):
 
 def PreProcessData(df):
 
-    print(f"Null Values in Datasets Are :{df.isnull().sum()}")
+    df = df.drop(columns=['Unnamed: 0'], errors='ignore')
+
+    print(df.head())
     print(Boreder)
 
-    before = df.shape[0]
+    print(f"Null Values in Datasets Are : \n {df.isnull().sum()}")
 
-    df.dropna(inplace=True)
-
-    after = df.shape[0]
-
-    print("Rows removed :", before - after)
-
-    print("Shape Of Dataset : ",df.shape)
     print(Boreder)
 
-    print("List Of Colums :\n", list(df.columns))
-    print(Boreder)
+    le = LabelEncoder()
+
+    df['Wether'] = le.fit_transform(df['Wether'])
+
+    df['Temperature'] = le.fit_transform(df['Temperature'])
+
+    df['Play'] = le.fit_transform(df['Play'])
+
+    scale = StandardScaler()
+
+    print(df.head())
 
     print("Satatical report of Dataset :")
     print(df.describe())
@@ -75,24 +82,12 @@ def PreProcessData(df):
 
 def SplitData(df):
 
-    # feacturs_col = [
-    #     'Alcohol','Malic','acid','Ash','Alcalinity of ash',
-    #     'Magnesium','Total phenols','Flavanoids',Nonflavanoid phenols','Proanthocyanins','Color intensity','Hue','OD280/OD315 of diluted wines','Proline'
-    # ]
-    #X = [feacturs_col]
+    X = df.drop(columns = ['Play'])
+    Y = df['Play']
 
-    X = df.drop(columns = ["Class"])
-    Y = df["Class"]
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 
-    X_train, X_test, Y_train, Y_test = train_test_split(
-        X,
-        Y,
-        test_size=0.2,
-        random_state=42
-        )
-
-    print("Spliting Data for Training & Testing Compelte")
-
+    print("Data Spliting Succesfull...")
     print(Boreder)
 
     return X_train, X_test, Y_train, Y_test
@@ -109,23 +104,18 @@ def SplitData(df):
 
 def TrainModel(X_train,Y_train):
 
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train) # --> for KNN 
-    # print(X_train_scaled)
-    #X_test_scaled = scalar.fit_transform(X_test)
-    
-    DecTree = DecisionTreeClassifier(max_depth=5)
 
-    KNNModel = KNeighborsClassifier(n_neighbors=7)
+    model = KNeighborsClassifier(n_neighbors=3)
 
-    DecTree = DecTree.fit(X_train,Y_train)
+    scale = StandardScaler()
+    X_train_scale = scale.fit_transform(X_train)
 
-    KNNModel = KNNModel.fit(X_train_scaled,Y_train)
+    model = model.fit(X_train_scale,Y_train)
 
     print("Model Train Succesfully...")
     print(Boreder)
 
-    return DecTree , KNNModel, scaler
+    return model, scale
 
 # step 5 : Evaluate model
 #----------------------------------------------------
@@ -137,36 +127,21 @@ def TrainModel(X_train,Y_train):
 # Date           :  18/08/2026
 #-----------------------------------------------------
 
-def TestModel(DecTree, KNNModel,scaler,X_test,Y_test):
+def TestModel(model,X_test,Y_test,scale):
 
-    # scalar = StandardScaler()
-    X_test_scaled = scaler.fit_transform(X_test) #--> For KNN
+    X_test_scale = scale.transform(X_test) #--> scale 
 
-    Y_pred = DecTree.predict(X_test)
+    Y_pred = model.predict(X_test_scale)
 
-    accuracy_DecTree = accuracy_score(Y_test,Y_pred)
+    accuracy = accuracy_score(Y_test,Y_pred)
 
-    print("Accuracy of DecisionTreeClassifier is :", accuracy_DecTree * 100 , "%")
-
-    print(Boreder)
-
-    Y_pred2 = KNNModel.predict(X_test_scaled)
-
-    accuracy_KNNModel = accuracy_score(Y_test,Y_pred2)
-
-    print("Accuracy of KNeighborsClassifier is :", accuracy_KNNModel * 100 , "%")
+    print("accuracy of model is :", accuracy*100, "%")
 
     print(Boreder)
 
-    if(accuracy_DecTree > accuracy_KNNModel):
-        print("Accuracy of DecisionTreeClassifier High")
-    elif(accuracy_KNNModel > accuracy_DecTree):
-        print("Accuracy of KNeighborsClassifier High")
-    else:
-        print("Same Accuracy")
+    print("Confusion Matrix :\n")
+    print(confusion_matrix(Y_test,Y_pred))
 
-    print(Boreder)
-    
 # step 6 : Perserve model
 #----------------------------------------------------
 # Funcation Name :  PreserveModel
@@ -185,31 +160,28 @@ def PreserveModel(model,filename):
 #----------------------------------------------------
 # Funcation Name :  main
 # Description    :  Entry point function
-# Input          : "WinePredictor.csv"
+# Input          : "MarvellousInfosystems_PlayPredictor.csv"
 # output         :  Data frame
 # Author         :  Omkar Ramchandra Kolte
 # Date           :  18/08/2026
 #-----------------------------------------------------
 def main():
-    # Step1 : Load the Data form csv
-    df = LoadData("WinePredictor.csv")
+    #step 1
+    df = LoadData("MarvellousInfosystems_PlayPredictor.csv")
 
-    # Step 2: PreProcess Data
+    #step 2
     df = PreProcessData(df)
 
-    # Step3 : Spliting For Traning & Testing
-    X_train, X_test, Y_train, Y_test = SplitData(df)
+    #step 3
+    X_train, X_test, Y_train, Y_test =SplitData(df)
 
-    # Step 4 : Train model
-    DecTree, KNNModel, scaler = TrainModel(X_train,Y_train)
+    #step 4
+    model, scale = TrainModel(X_train,Y_train)
 
-    # step 5 : Evaluate model
-    TestModel(DecTree, KNNModel,scaler,X_test,Y_test)
+    #step 5
+    TestModel(model,X_test,Y_test,scale)
 
-    # step 6 : Perserve model
-    PreserveModel(DecTree, "DecisionTree.pkl")
-    PreserveModel(KNNModel, "KNNModel.pkl")
-    PreserveModel(scaler, "Scaler.pkl") # -> for same Scales use after
+    PreserveModel(model, "PlayPredictor")
 
 if __name__ == "__main__":
     main()
