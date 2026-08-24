@@ -1,0 +1,4 @@
+Name,Mathematics,Science,English,Total,Math_Normalization,Gender_Female,Gender_Male,Status
+Sager,90,88,85,263,1.0,False,True,Pass
+Amit,85,92,75,252,0.583333333333333,False,True,Pass
+puja,78,80,82,240,0.0,True,False,Fail
